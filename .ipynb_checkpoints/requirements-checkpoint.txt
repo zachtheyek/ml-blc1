@@ -1,0 +1,7 @@
+numpy
+astropy
+pandas
+matplotlib
+blimpy
+setigen
+blscint
