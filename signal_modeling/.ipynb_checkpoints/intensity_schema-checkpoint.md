@@ -32,7 +32,9 @@ List is per candidate, candidate signal list is per observation.
             {
                 'drift_rate': None,
                 'center_freq': None,
-                'scaled_ts': None
+                'scaled_ts': None,
+                'noise_mean': None,
+                'noise_std': None,
             },
             ...,
             {...}
@@ -43,3 +45,11 @@ List is per candidate, candidate signal list is per observation.
 ]
 ```
 This is calculated via `extract_signals.all_time_series()`.
+
+To load data, do
+```
+import extra_signals as es
+all_y = np.load('intensity_data.npy', allow_pickle=True))
+```
+
+Note that since this is a list, we do *not* need to use ".item" to access the data.

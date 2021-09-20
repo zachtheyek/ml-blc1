@@ -91,23 +91,30 @@ def single_obs_time_series(candidate, obs):
         output['scaled_ts'] = None
         output['drift_rate'] = None
         output['center_freq'] = None
+        output['noise_mean'] = None
+        output['noise_std'] = None
     else:
         frame = bls.centered_frame(fn=full_path,
                                    drift_rate=drift_rate,
                                    center_freq=center_freq,
                                    fchans=256)
         frame = stg.dedrift(frame, drift_rate=drift_rate)
+        noise_mean, _ = frame.get_noise_stats()
+        
         l, r, _ = bls.threshold_bounds(frame.integrate())
         n_frame = bls.t_norm_frame(frame)
         tr_frame = n_frame.get_slice(l, r)
         tr_y = tr_frame.integrate('f', mode='sum')
 #             tr_y /= tr_y.mean()
         # normalize tr_y by noise levels
-        tr_y /= np.std(sigma_clip(tr_frame.get_data()))
+        noise_std = np.std(sigma_clip(n_frame.get_data()))
+        tr_y /= noise_std
 
         output['scaled_ts'] = tr_y
         output['drift_rate'] = drift_rate
         output['center_freq'] = center_freq
+        output['noise_mean'] = noise_mean
+        output['noise_std'] = noise_std
 
     return output
 
