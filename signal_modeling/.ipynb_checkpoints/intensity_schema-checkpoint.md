@@ -32,7 +32,7 @@ List is per candidate, candidate signal list is per observation.
             {
                 'drift_rate': None,
                 'center_freq': None,
-                'scaled_ts': None,
+                'scaled_ys': None,
                 'noise_mean': None,
                 'noise_std': None,
             },

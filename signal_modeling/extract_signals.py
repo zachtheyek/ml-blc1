@@ -88,7 +88,7 @@ def single_obs_time_series(candidate, obs):
     drift_rate = DRIFTS[meta_row['lookalike']].loc[obs]
     center_freq = CENTERS[meta_row['lookalike']].loc[obs]
     if pd.isnull(drift_rate):
-        output['scaled_ts'] = None
+        output['scaled_ys'] = None
         output['drift_rate'] = None
         output['center_freq'] = None
         output['noise_mean'] = None
@@ -110,7 +110,7 @@ def single_obs_time_series(candidate, obs):
         noise_std = np.std(sigma_clip(n_frame.get_data()))
         tr_y /= noise_std
 
-        output['scaled_ts'] = tr_y
+        output['scaled_ys'] = tr_y
         output['drift_rate'] = drift_rate
         output['center_freq'] = center_freq
         output['noise_mean'] = noise_mean
