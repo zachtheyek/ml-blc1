@@ -21,6 +21,10 @@ CENTERS = pd.read_csv('first_11_start_frequencies.csv', sep=';')
 def get_ts_info():
     """
     Get timestamps for observations.
+    
+    Returns a dictionary with key 'ts_list', containing a list of timestamp
+    arrays matching our observations. Also has 'dt' and 'tstart' for 
+    convenience.
     """
     ts_info = {}
     ts_list = []
@@ -50,6 +54,13 @@ def get_ts_info():
     return ts_info
 
 
+def get_full_ts(ts_info):
+    """
+    Return full timestamp array for use with setigen.
+    """
+    return np.concatenate(ts_info['ts_list'])
+
+
 def single_obs_time_series(candidate, obs):
     """
     Dedrift and set bounding boxes around signals to estimate intensity
@@ -65,7 +76,7 @@ def single_obs_time_series(candidate, obs):
     Returns
     -------
     output : dict
-        Dict with extraction details
+        Dict with extraction details. 
     """
     output = {}
         
