@@ -93,6 +93,7 @@ def single_obs_time_series(candidate, obs):
         output['center_freq'] = None
         output['noise_mean'] = None
         output['noise_std'] = None
+        output['px_width'] = None
     else:
         frame = bls.centered_frame(fn=full_path,
                                    drift_rate=drift_rate,
@@ -115,6 +116,7 @@ def single_obs_time_series(candidate, obs):
         output['center_freq'] = center_freq
         output['noise_mean'] = noise_mean
         output['noise_std'] = noise_std
+        output['px_width'] = r - l
 
     return output
 

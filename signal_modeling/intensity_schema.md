@@ -35,6 +35,7 @@ List is per candidate, candidate signal list is per observation.
                 'scaled_ys': None,
                 'noise_mean': None,
                 'noise_std': None,
+                'px_width': None
             },
             ...,
             {...}
