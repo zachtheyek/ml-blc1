@@ -17,7 +17,7 @@ This is calculated via `extract_signals.get_ts_info()`.
 To get contiguous array of all timestamps, do
 ```
 import extra_signals as es
-ts_info = np.load('ts_info.npy', allow_pickle=True)).item()
+ts_info = np.load('ts_info.npy', allow_pickle=True).item()
 ts = es.get_full_ts(ts_info)
 ```
 
