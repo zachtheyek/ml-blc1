@@ -1,4 +1,7 @@
 .ipynb_checkpoints/
+*.pyc
+*.zip
+*.gz
 *.wav
 *.png
 data/

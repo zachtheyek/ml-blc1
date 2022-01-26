@@ -7,15 +7,10 @@ import pandas as pd
 import numpy as np
 from astropy.time import Time
 from astropy.stats import sigma_clip
-import astropy.units as u
+import astropy.units as ua
+import tqdm
 
-DATA_PREFIX = '/mnt_blpd2/datax/PKSUWL/blcxx/PKSUWL'
-
-META = pd.read_csv('first_11_meta_info.csv', sep=';')
-META['indexes'] = META['indexes'].str.strip()
-
-DRIFTS = pd.read_csv('first_11_drift_rates.csv', sep=';')
-CENTERS = pd.read_csv('first_11_start_frequencies.csv', sep=';')
+from context import DATA_PREFIX, META, DRIFTS, CENTERS
 
 
 def get_ts_info():
@@ -28,7 +23,7 @@ def get_ts_info():
     """
     ts_info = {}
     ts_list = []
-    for j in range(len(DRIFTS)):
+    for j in tqdm.tqdm(range(len(DRIFTS))):
         filename = DRIFTS['filename'].loc[j]
         # Just use first candidate to get times
         full_path = f'{DATA_PREFIX}/{filename}'.replace('blcxx', 
@@ -48,7 +43,7 @@ def get_ts_info():
 #         x = Time(x, format='unix').mjd
 
         # Subtract out tstart so that ts starts at 0
-        ts_list.append(x - ts_info['tstart'])
+        ts_list.append(x - Time(ts_info['tstart'], format='mjd').unix)
         
     ts_info['ts_list'] = ts_list
     return ts_info
@@ -61,7 +56,7 @@ def get_full_ts(ts_info):
     return np.concatenate(ts_info['ts_list'])
 
 
-def single_obs_time_series(candidate, obs):
+def single_obs_time_series(candidate, obs, frame_params=None):
     """
     Dedrift and set bounding boxes around signals to estimate intensity
     over time.
@@ -78,45 +73,38 @@ def single_obs_time_series(candidate, obs):
     output : dict
         Dict with extraction details. 
     """
-    output = {}
-        
     meta_row = META.loc[candidate]
     filename = DRIFTS['filename'].loc[obs]
     full_path = f'{DATA_PREFIX}/{filename}'.replace('blcxx', 
                                                     meta_row['node'])
-
     drift_rate = DRIFTS[meta_row['lookalike']].loc[obs]
     center_freq = CENTERS[meta_row['lookalike']].loc[obs]
-    if pd.isnull(drift_rate):
-        output['scaled_ys'] = None
-        output['drift_rate'] = None
-        output['center_freq'] = None
-        output['noise_mean'] = None
-        output['noise_std'] = None
-        output['px_width'] = None
-    else:
-        frame = bls.centered_frame(fn=full_path,
-                                   drift_rate=drift_rate,
-                                   center_freq=center_freq,
-                                   fchans=256)
-        frame = stg.dedrift(frame, drift_rate=drift_rate)
-        noise_mean, _ = frame.get_noise_stats()
-        
-        l, r, _ = bls.threshold_bounds(frame.integrate())
-        n_frame = bls.t_norm_frame(frame)
-        tr_frame = n_frame.get_slice(l, r)
-        tr_y = tr_frame.integrate('f', mode='sum')
-#             tr_y /= tr_y.mean()
-        # normalize tr_y by noise levels
-        noise_std = np.std(sigma_clip(n_frame.get_data()))
-        tr_y /= noise_std
+    
+    frame = bls.centered_frame(fn=full_path,
+                               drift_rate=drift_rate,
+                               center_freq=center_freq,
+                               fchans=256,
+                               frame_params=frame_params)
+    frame = stg.dedrift(frame, drift_rate=drift_rate)
+    noise_mean, _ = frame.get_noise_stats()
 
-        output['scaled_ys'] = tr_y
-        output['drift_rate'] = drift_rate
-        output['center_freq'] = center_freq
-        output['noise_mean'] = noise_mean
-        output['noise_std'] = noise_std
-        output['px_width'] = r - l
+    l, r, _ = bls.threshold_bounds(frame.integrate())
+    n_frame = bls.t_norm_frame(frame)
+    tr_frame = n_frame.get_slice(l, r)
+    tr_y = tr_frame.integrate('f', mode='sum')
+#             tr_y /= tr_y.mean()
+    # normalize tr_y by noise levels
+    noise_std = np.std(sigma_clip(n_frame.get_data()))
+    tr_y /= noise_std
+    
+    output = {
+        'scaled_ys': tr_y,
+        'drift_rate': drift_rate,
+        'center_freq': center_freq,
+        'noise_mean': noise_mean,
+        'noise_std': noise_std,
+        'px_width': r - l
+    }
 
     return output
 
@@ -125,13 +113,47 @@ def all_time_series():
     """
     Compute time series of all candidates, over all exposures.
     """
+    meta_row = META.loc[0]
+    filename = DRIFTS['filename'].loc[0]
+    frame_params = bls.get_frame_params(f'{DATA_PREFIX}/{filename}'.replace('blcxx', 
+                                                                            meta_row['node']))
+    
     all_y = []
-    for i, meta_row in META.iterrows():
+    for i, meta_row in tqdm.tqdm(META.iterrows()):
         signal_info = {
             'name': meta_row['lookalike'],
             'signal' : []
         }
+        indices = json.loads(meta_row['indexes'])
         for j in range(len(DRIFTS)):
-            signal_info['signal'].append(single_obs_time_series(i, j))
+            if j in indices:
+                info = single_obs_time_series(i, j, frame_params=frame_params)
+            else:
+                info = {
+                    'scaled_ys': None,
+                    'drift_rate': None,
+                    'center_freq': None,
+                    'noise_mean': None,
+                    'noise_std': None,
+                    'px_width': None
+                }
+            signal_info['signal'].append(info)
         all_y.append(signal_info)
     return all_y
+
+
+def generate_analysis_products(prefix=''):
+    """
+    Compute and save analysis products in one function.
+    """
+    print('Generating ts_info...')
+    ts_info = get_ts_info()
+    np.save(f'{prefix}ts_info.npy', ts_info)
+    print('')
+    print('Generating intensity_data...')
+    all_y = all_time_series()
+    np.save(f'{prefix}intensity_data.npy', all_y)
+    
+    
+if __name__ == '__main__':
+    generate_analysis_products()
