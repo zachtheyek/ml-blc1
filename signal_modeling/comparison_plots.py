@@ -11,7 +11,7 @@ import astropy.units as u
 import tqdm
 import pathlib
 
-from context import DATA_PREFIX, META, DRIFTS, CENTERS
+from params import DATA_PREFIX, META, DRIFTS, CENTERS
 import extract_signals as es
 
 

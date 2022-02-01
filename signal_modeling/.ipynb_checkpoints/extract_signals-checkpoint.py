@@ -10,7 +10,7 @@ from astropy.stats import sigma_clip
 import astropy.units as ua
 import tqdm
 
-from context import DATA_PREFIX, META, DRIFTS, CENTERS
+from params import DATA_PREFIX, META, DRIFTS, CENTERS
 
 
 def get_ts_info():
@@ -56,7 +56,7 @@ def get_full_ts(ts_info):
     return np.concatenate(ts_info['ts_list'])
 
 
-def single_obs_time_series(candidate, obs, frame_params=None):
+def single_obs_time_series(candidate, obs, fchans=256, frame_params=None):
     """
     Dedrift and set bounding boxes around signals to estimate intensity
     over time.
@@ -83,7 +83,7 @@ def single_obs_time_series(candidate, obs, frame_params=None):
     frame = bls.centered_frame(fn=full_path,
                                drift_rate=drift_rate,
                                center_freq=center_freq,
-                               fchans=256,
+                               fchans=fchans,
                                frame_params=frame_params)
     frame = stg.dedrift(frame, drift_rate=drift_rate)
     noise_mean, _ = frame.get_noise_stats()
@@ -109,7 +109,7 @@ def single_obs_time_series(candidate, obs, frame_params=None):
     return output
 
 
-def all_time_series():
+def all_time_series(fchans=256):
     """
     Compute time series of all candidates, over all exposures.
     """
@@ -127,7 +127,7 @@ def all_time_series():
         indices = json.loads(meta_row['indexes'])
         for j in range(len(DRIFTS)):
             if j in indices:
-                info = single_obs_time_series(i, j, frame_params=frame_params)
+                info = single_obs_time_series(i, j, fchans=fchans, frame_params=frame_params)
             else:
                 info = {
                     'scaled_ys': None,
@@ -142,7 +142,7 @@ def all_time_series():
     return all_y
 
 
-def generate_analysis_products(prefix=''):
+def generate_analysis_products(prefix='', fchans=256):
     """
     Compute and save analysis products in one function.
     """
@@ -151,9 +151,9 @@ def generate_analysis_products(prefix=''):
     np.save(f'{prefix}ts_info.npy', ts_info)
     print('')
     print('Generating intensity_data...')
-    all_y = all_time_series()
+    all_y = all_time_series(fchans=fchans)
     np.save(f'{prefix}intensity_data.npy', all_y)
     
     
 if __name__ == '__main__':
-    generate_analysis_products()
+    generate_analysis_products(fchans=256)
