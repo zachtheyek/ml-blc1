@@ -170,12 +170,12 @@ def vertical_frame():
     start_index = np.random.randint(0, 512)
     drift_rate = np.random.uniform(-0.001, 0.001)
     
-    c.add_signal(stg.simple_rfi_path(f_start=frame.get_frequency(index=start_index),
+    c.add_signal(stg.simple_rfi_path(f_start=c[0].get_frequency(index=start_index),
                                        drift_rate=drift_rate,
-                                     spread=1*frame.df,
+                                     spread=1*c[0].df,
                                      spread_type='normal'),
-                     stg.constant_t_profile(level=frame.get_intensity(snr=snr)),
-                     stg.sinc2_f_profile(width=frame.df),
+                     stg.constant_t_profile(level=c[0].get_intensity(snr=snr)),
+                     stg.sinc2_f_profile(width=c[0].df),
                      stg.constant_bp_profile(level=1))
     final_frame = c.consolidate()
     frame_info = {
